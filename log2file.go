@@ -18,14 +18,18 @@ func main() {
 
 	logFileName := os.Args[1]
 
-	mode := os.O_CREATE | os.O_APPEND | os.O_WRONLY
-	perm := os.FileMode(0660)
+	openLogFile := func(logFileName string) *os.File {
+		mode := os.O_CREATE | os.O_APPEND | os.O_WRONLY
+		perm := os.FileMode(0660)
 
-	// file has to exist in order to watch it
-	logFile, err := os.OpenFile(logFileName, mode, perm)
-	if err != nil {
-		log.Fatal(err)
+		// file has to exist in order to watch it
+		logFile, err := os.OpenFile(logFileName, mode, perm)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return logFile
 	}
+	logFile := openLogFile(logFileName)
 
 	writer := make(chan string)
 	watcher, err := fsnotify.NewWatcher()
@@ -41,10 +45,7 @@ func main() {
 				isRename := (ev.Op&fsnotify.Rename == fsnotify.Rename)
 				if isRemove || isRename {
 					logFile.Close()
-					logFile, err = os.OpenFile(logFileName, mode, perm)
-					if err != nil {
-						log.Fatal(err)
-					}
+					logFile = openLogFile(logFileName)
 				}
 			case err := <-watcher.Errors:
 				log.Fatal(err)
