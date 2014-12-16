@@ -37,14 +37,9 @@ func main() {
 		for {
 			select {
 			case ev := <-watcher.Events:
-				if ev.Op&fsnotify.Remove == fsnotify.Remove {
-					logFile.Close()
-					logFile, err = os.OpenFile(logFileName, mode, perm)
-					if err != nil {
-						log.Fatal(err)
-					}
-				}
-				if ev.Op&fsnotify.Rename == fsnotify.Rename {
+				isRemove := (ev.Op&fsnotify.Remove == fsnotify.Remove)
+				isRename := (ev.Op&fsnotify.Rename == fsnotify.Rename)
+				if isRemove || isRename {
 					logFile.Close()
 					logFile, err = os.OpenFile(logFileName, mode, perm)
 					if err != nil {
