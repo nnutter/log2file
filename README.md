@@ -8,3 +8,7 @@ handle if the file is renamed or deleted.
 ```
 GOOS=linux go build log2file.go
 ```
+
+# Releases
+
+If you tag a new release Travis CI will automatically add the binary to the release.
