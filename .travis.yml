@@ -1,0 +1,16 @@
+language: go
+go: 1.4
+script: true
+after_success:
+    - GOOS=linux GOARCH="amd64" go build -o log2file_linux_amd64 log2file.go
+deploy:
+  provider: releases
+  api_key:
+    secure: smZSPXYeFYKqsYEBlsGnj35AL+8TyG9u7O8gJqlSb+IFylbHZyxllcO8hVCBc3qqSagxpYZPFf+CTrWr63VYEUdar9dBrJs+HQiChZOFPLM9iTJJzZ6FHMpM3P/2rRq9iVSqYZfLpebN1afUgM+aNbQG6hTxxpXYzKISXItWtbk=
+  file:
+    - log2file_linux_amd64
+  on:
+    repo: nnutter/log2file
+    all_branches: true
+    tags: true
+    go: 1.4
