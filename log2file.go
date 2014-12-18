@@ -17,10 +17,9 @@ func main() {
 	}
 
 	logFileName := os.Args[1]
-	logFile := openLogFile(logFileName)
-
 	writer := make(chan string)
 	watcher, err := fsnotify.NewWatcher()
+	logFile := openLogFile(watcher, logFileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +32,7 @@ func main() {
 				isRename := (ev.Op&fsnotify.Rename == fsnotify.Rename)
 				if isRemove || isRename {
 					logFile.Close()
-					logFile = openLogFile(logFileName)
+					logFile = openLogFile(watcher, logFileName)
 				}
 			case err := <-watcher.Errors:
 				log.Fatal(err)
@@ -46,11 +45,6 @@ func main() {
 		}
 	}()
 
-	err = watcher.Add(logFileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
@@ -61,12 +55,19 @@ func main() {
 	watcher.Close()
 }
 
-func openLogFile(logFileName string) *os.File {
+func openLogFile(watcher *fsnotify.Watcher, logFileName string) *os.File {
 	mode := os.O_CREATE | os.O_APPEND | os.O_WRONLY
 	perm := os.FileMode(0660)
+
 	logFile, err := os.OpenFile(logFileName, mode, perm)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = watcher.Add(logFileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return logFile
 }
