@@ -17,17 +17,6 @@ func main() {
 	}
 
 	logFileName := os.Args[1]
-
-	openLogFile := func(logFileName string) *os.File {
-		mode := os.O_CREATE | os.O_APPEND | os.O_WRONLY
-		perm := os.FileMode(0660)
-		logFile, err := os.OpenFile(logFileName, mode, perm)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return logFile
-	}
-
 	logFile := openLogFile(logFileName)
 
 	writer := make(chan string)
@@ -70,4 +59,14 @@ func main() {
 	}
 
 	watcher.Close()
+}
+
+func openLogFile(logFileName string) *os.File {
+	mode := os.O_CREATE | os.O_APPEND | os.O_WRONLY
+	perm := os.FileMode(0660)
+	logFile, err := os.OpenFile(logFileName, mode, perm)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return logFile
 }
