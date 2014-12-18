@@ -2,7 +2,7 @@ sudo: false
 language: go
 go: 1.4
 script: true
-after_success:
+before_deploy:
     - GOOS=linux GOARCH=amd64 go build -o log2file_linux_amd64 log2file.go
 deploy:
   provider: releases
