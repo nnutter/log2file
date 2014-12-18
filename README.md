@@ -11,4 +11,5 @@ GOOS=linux go build log2file.go
 
 # Releases
 
-If you tag a new release Travis CI will automatically add the binary to the release.
+If you tag a release then Travis CI will automatically add the binary for 64-bit
+Linux to it.
