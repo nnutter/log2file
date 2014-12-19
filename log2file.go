@@ -32,6 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer wf.Close()
 
 	go func() {
 		for {
@@ -62,8 +63,6 @@ func main() {
 		line := scanner.Text()
 		writer <- line
 	}
-
-	wf.Close()
 }
 
 func NewWatchedFile(name string) (*watchedFile, error) {
