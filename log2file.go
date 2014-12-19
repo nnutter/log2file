@@ -8,6 +8,14 @@ import (
 	"os"
 )
 
+type watchedFile struct {
+	Name    string
+	Errors  chan error
+	Events  chan fsnotify.Event
+	handle  *os.File
+	watcher *fsnotify.Watcher
+}
+
 // log2file reads from standard input and write to the file, reopening its file
 // handle if the file is renamed or deleted.
 func main() {
@@ -17,9 +25,10 @@ func main() {
 	}
 
 	logFileName := os.Args[1]
+
 	writer := make(chan string)
-	watcher, err := fsnotify.NewWatcher()
-	logFile := openLogFile(watcher, logFileName)
+
+	wf, err := NewWatchedFile(logFileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,18 +36,19 @@ func main() {
 	go func() {
 		for {
 			select {
-			case ev := <-watcher.Events:
+			case ev := <-wf.Events:
 				isRemove := (ev.Op&fsnotify.Remove == fsnotify.Remove)
 				isRename := (ev.Op&fsnotify.Rename == fsnotify.Rename)
 				if isRemove || isRename {
-					logFile.Close()
-					watcher.Remove(logFileName)
-					logFile = openLogFile(watcher, logFileName)
+					wf, err = wf.Reopen()
+					if err != nil {
+						log.Fatal(err)
+					}
 				}
-			case err := <-watcher.Errors:
+			case err := <-wf.Errors:
 				log.Fatal(err)
 			case line := <-writer:
-				_, err := fmt.Fprintln(logFile, line)
+				err = wf.Println(line)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -53,22 +63,64 @@ func main() {
 		writer <- line
 	}
 
-	watcher.Close()
+	wf.Close()
 }
 
-func openLogFile(watcher *fsnotify.Watcher, logFileName string) *os.File {
+func NewWatchedFile(name string) (*watchedFile, error) {
 	mode := os.O_CREATE | os.O_APPEND | os.O_WRONLY
 	perm := os.FileMode(0660)
 
-	logFile, err := os.OpenFile(logFileName, mode, perm)
+	handle, err := os.OpenFile(name, mode, perm)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	err = watcher.Add(logFileName)
+	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return logFile
+	err = watcher.Add(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &watchedFile{
+		Name:    name,
+		Errors:  watcher.Errors,
+		Events:  watcher.Events,
+		handle:  handle,
+		watcher: watcher,
+	}, nil
+}
+
+func (wf *watchedFile) Close() error {
+	err := wf.handle.Close()
+	if err != nil {
+		return err
+	}
+
+	err = wf.watcher.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (wf *watchedFile) Reopen() (*watchedFile, error) {
+	err := wf.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewWatchedFile(wf.Name)
+}
+
+func (wf *watchedFile) Println(line string) error {
+	_, err := fmt.Fprintln(wf.handle, line)
+	if err != nil {
+		return err
+	}
+	return nil
 }
