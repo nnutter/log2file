@@ -97,14 +97,15 @@ func NewWatchedFile(name string) (*watchedFile, error) {
 }
 
 func (wf *watchedFile) Close() error {
-	err := wf.handle.Close()
-	if err != nil {
-		return err
+	hErr := wf.handle.Close()
+	wErr := wf.watcher.Close()
+
+	if hErr != nil {
+		return hErr
 	}
 
-	err = wf.watcher.Close()
-	if err != nil {
-		return err
+	if wErr != nil {
+		return wErr
 	}
 
 	return nil
