@@ -32,6 +32,7 @@ func main() {
 				isRename := (ev.Op&fsnotify.Rename == fsnotify.Rename)
 				if isRemove || isRename {
 					logFile.Close()
+					watcher.Remove(logFileName)
 					logFile = openLogFile(watcher, logFileName)
 				}
 			case err := <-watcher.Errors:
