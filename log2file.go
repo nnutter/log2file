@@ -76,11 +76,14 @@ func NewWatchedFile(name string) (*watchedFile, error) {
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
+		handle.Close()
 		return nil, err
 	}
 
 	err = watcher.Add(name)
 	if err != nil {
+		handle.Close()
+		watcher.Close()
 		return nil, err
 	}
 
